@@ -1,71 +1,132 @@
-import pygame
-import sys
+import turtle
+import cProfile
 
-# Initialize Pygame
-pygame.init()
+def paddle_a_up():
+    y = paddle_a.ycor()
+    y += 20
+    paddle_a.sety(y)
 
-# Constants
-WIDTH, HEIGHT = 800, 600
-BALL_SPEED = 5
-PADDLE_SPEED = 7
+def paddle_a_down():
+    y = paddle_a.ycor()
+    y -= 20
+    paddle_a.sety(y)
 
-# Colors
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+def paddle_b_up():
+    y = paddle_b.ycor()
+    y += 20
+    paddle_b.sety(y)
 
-# Create the game window
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pong Game")
+def paddle_b_down():
+    y = paddle_b.ycor()
+    y -= 20
+    paddle_b.sety(y)
 
-# Initialize paddles and ball
-paddle1 = pygame.Rect(50, HEIGHT // 2 - 30, 20, 60)
-paddle2 = pygame.Rect(WIDTH - 70, HEIGHT // 2 - 30, 20, 60)
-ball = pygame.Rect(WIDTH // 2 - 15, HEIGHT // 2 - 15, 30, 30)
-ball_direction = [1, 1]
+root = turtle.Screen()
+root.bgcolor("light blue")
+root.title("Pong Game By Sidra")
+root.setup(width=850, height=650)
+root.tracer(2)
+
+# paddle_a
+paddle_a = turtle.Turtle()
+paddle_a.speed(0)
+paddle_a.shape("square")
+paddle_a.color("black")
+paddle_a.shapesize(stretch_wid=5, stretch_len=1)
+paddle_a.penup()
+paddle_a.goto(-350, 0)
+
+# paddle_b
+paddle_b = turtle.Turtle()
+paddle_b.speed(0)
+paddle_b.shape("square")
+paddle_b.color("black")
+paddle_b.shapesize(stretch_wid=5, stretch_len=1)
+paddle_b.penup()
+paddle_b.goto(350, 0)
+
+# ball
+ball = turtle.Turtle()
+ball.speed(0)
+ball.shape("circle")
+ball.color("black")
+ball.penup()
+ball.goto(0, 0)
+ball.dx = 2
+ball.dy = -2
+
+# pen
+pen = turtle.Turtle()
+pen.speed(0)
+pen.color("black")
+pen.penup()
+pen.hideturtle()
+pen.goto(0, 260)
+pen.write("Player 1: 0  Player 2: 0", align="center", font=("Courier", 24, "normal"))
+
+score_a = 0
+score_b = 0
+
+# Keyboard binding
+root.listen()
+root.onkeypress(paddle_a_up, "w")
+root.onkeypress(paddle_a_down, "x")
+root.onkeypress(paddle_b_up, "o")
+root.onkeypress(paddle_b_down, "k")
 
 # Main game loop
-while True:
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            pygame.quit()
-            sys.exit()
+def update():
+    global score_a, score_b
+    root.update()
+    ball.setx(ball.xcor() + ball.dx)
+    ball.sety(ball.ycor() + ball.dy)
 
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] and paddle1.top > 0:
-        paddle1.y -= PADDLE_SPEED
-    if keys[pygame.K_s] and paddle1.bottom < HEIGHT:
-        paddle1.y += PADDLE_SPEED
-    if keys[pygame.K_UP] and paddle2.top > 0:
-        paddle2.y -= PADDLE_SPEED
-    if keys[pygame.K_DOWN] and paddle2.bottom < HEIGHT:
-        paddle2.y += PADDLE_SPEED
+    # When_ball_Touch_the_border_hit_the_ball
+    if ball.ycor() > 290:
+        ball.sety(290)
+        ball.dy *= -1
 
-    # Move the ball
-    ball.x += BALL_SPEED * ball_direction[0]
-    ball.y += BALL_SPEED * ball_direction[1]
+    if ball.ycor() < -290:
+        ball.sety(-290)
+        ball.dy *= -1
 
-    # Check for collisions with walls
-    if ball.top <= 0 or ball.bottom >= HEIGHT:
-        ball_direction[1] = -ball_direction[1]
+    if ball.xcor() > 390:
+        ball.goto(0, 0)
+        ball.dx *= -1
+        score_a += 1
+        pen.clear()
+        pen.write("Player 1: {}  Player 2: {}".format(score_a, score_b), align="center", font=("Courier", 24, "normal"))
 
-    # Check for collisions with paddles
-    if ball.colliderect(paddle1) or ball.colliderect(paddle2):
-        ball_direction[0] = -ball_direction[0]
+    if ball.xcor() < -390:
+        ball.goto(0, 0)
+        ball.dx *= -1
+        score_b += 1
+        pen.clear()
+        pen.write("Player 1: {}  Player 2: {}".format(score_a, score_b), align="center", font=("Courier", 24, "normal"))
 
-    # Check for scoring
-    if ball.left <= 0 or ball.right >= WIDTH:
-        ball_direction = [1, 1]
-        ball.x = WIDTH // 2 - 15
-        ball.y = HEIGHT // 2 - 15
+    assert -290 <= ball.ycor() <= 290, "Ball y-coordinate out of bounds"
 
-    # Draw everything
-    screen.fill(BLACK)
-    pygame.draw.rect(screen, WHITE, paddle1)
-    pygame.draw.rect(screen, WHITE, paddle2)
-    pygame.draw.ellipse(screen, WHITE, ball)
+    if (
+        ball.xcor() < -340
+        and ball.ycor() < paddle_a.ycor() + 40
+        and ball.ycor() > paddle_a.ycor() - 40
+    ):
+        ball.dx *= -1
+    elif (
+        ball.xcor() > 340
+        and ball.ycor() < paddle_b.ycor() + 40
+        and ball.ycor() > paddle_b.ycor() - 40
+    ):
+        ball.dx *= -1
 
-    # Update the display
-    pygame.display.flip()
+    root.ontimer(update, 10)
 
-    # Cap the frame rate
-    pygame.time.Clock().tick(60)
+def main():
+    update()
+
+# Run the profiler on the main function
+cProfile.run("main()", sort="cumulative")
+
+# Run the main event loop
+root.mainloop()
+
